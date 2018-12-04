@@ -1,3 +1,4 @@
+![alt text](https://github.com/cuonglu/leafeon/blob/master/Leafeon.png)
 # Leafeon
 
 A demonstration about streaming message with Apache Spark, Apache Kafka.
