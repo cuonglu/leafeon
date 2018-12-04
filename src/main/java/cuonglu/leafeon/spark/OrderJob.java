@@ -82,7 +82,7 @@ public class OrderJob {
                         if (currentProductByIds.containsKey(item.getProductId())) {
                             return currentProductByIds.get(item.getProductId());
                         } else {
-                            return productRepository.save(Product.builder().productId(item.getProductId()).name("Product " + item.getProductId()).build());
+                            return productRepository.save(Product.builder().productId(item.getProductId()).name(item.getProductId()).build());
                         }
                     })
                     .collect(Collectors.toSet());
@@ -90,28 +90,13 @@ public class OrderJob {
             Set<Product> temp = new HashSet<>(fullProductByIds);
             fullProductByIds.forEach(product -> {
                 temp.remove(product);
-                final Map<String, Related> relatedByProduct;
-                if (product.getRelated() != null) {
-                    relatedByProduct = product.getRelated().stream().collect(Collectors.toMap(
-                            r -> {
-                                if (r.getStart().getProductId().equals(product.getProductId())) {
-                                    return r.getEnd().getProductId();
-                                } else {
-                                    return r.getStart().getProductId();
-                                }
-                            },
-                            r -> r));
-                } else {
-                    relatedByProduct = new HashMap<>();
-                }
                 temp.forEach(tempProduct -> {
-                    Related related = relatedByProduct.getOrDefault(tempProduct.getProductId(),
-                            Related.builder().start(product).end(tempProduct).weight(0).build());
+                    Related related = relatedRepository.findRelative(product.getProductId(), tempProduct.getProductId())
+                            .orElseGet(() -> Related.builder().start(product).end(tempProduct).weight(0).build());
                     related.increaseWeight();
                     relatedRepository.save(related);
                 });
             });
-
         });
         jssc.start();
     }
