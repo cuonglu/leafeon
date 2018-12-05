@@ -2,6 +2,7 @@ package cuonglu.leafeon.controller;
 
 import cuonglu.leafeon.model.RelativeProduct;
 import cuonglu.leafeon.neo4j.entity.Product;
+import cuonglu.leafeon.neo4j.entity.Related;
 import cuonglu.leafeon.neo4j.repository.Neo4jProductRepository;
 import cuonglu.leafeon.repository.ProductRepository;
 import lombok.RequiredArgsConstructor;
@@ -31,20 +32,18 @@ public class RelativeContronller {
             return Collections.emptyList();
         }
 
-        Map<String, Integer> weight = new HashMap<>();
-        List<String> ids = new ArrayList<>();
-        product.get().getRelated().forEach(r -> {
-            String relativeProductId;
-            if (r.getStart().getProductId().equals(id)) {
-                relativeProductId = r.getEnd().getProductId();
-            } else {
-                relativeProductId = r.getStart().getProductId();
-            }
-            weight.put(relativeProductId, r.getWeight());
-            ids.add(relativeProductId);
-        });
+        Map<String, Integer> weight = product.get().getRelated().stream()
+                .collect(Collectors.toMap(r -> {
+                    String relativeProductId;
+                    if (r.getStart().getProductId().equals(id)) {
+                        relativeProductId = r.getEnd().getProductId();
+                    } else {
+                        relativeProductId = r.getStart().getProductId();
+                    }
+                    return relativeProductId;
+                }, Related::getWeight));
 
-        List<RelativeProduct> relativeProducts = StreamSupport.stream(productRepository.findAllById(ids).spliterator(), false)
+        return StreamSupport.stream(productRepository.findAllById(weight.keySet()).spliterator(), false)
                 .map(p -> {
                     RelativeProduct relativeProduct = new RelativeProduct();
                     relativeProduct.setWeight(weight.get(p.getId()));
@@ -57,7 +56,5 @@ public class RelativeContronller {
                 })
                 .sorted(Comparator.comparing(RelativeProduct::getWeight).reversed())
                 .collect(Collectors.toList());
-
-        return relativeProducts;
     }
 }
